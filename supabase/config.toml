@@ -1,0 +1,4 @@
+project_id = "xseklnmgggguikzkmvjb"
+
+[functions.generate-resume]
+verify_jwt = false
