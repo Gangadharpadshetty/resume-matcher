@@ -16,29 +16,62 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are an expert ATS resume writer and LaTeX expert. Your task is to rewrite and optimize a resume using LaTeX to maximize ATS compatibility with a specific job description.
+    const systemPrompt = `You are an elite ATS resume strategist, career coach, and LaTeX typesetting expert. Your mission: craft a SINGLE-PAGE resume so powerful the interviewer is ready to hire on sight.
 
-Rules:
-1. Generate COMPLETE, compilable LaTeX code using standard packages (geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor).
-2. Naturally incorporate ALL missing keywords from the job description into the resume content.
-3. Keep all factual information accurate — only rephrase, don't fabricate experience.
-4. Use clean, ATS-friendly formatting (no tables for main content, no columns for skills/contact).
-5. Return ONLY the LaTeX code, starting with \\documentclass and ending with \\end{document}. No explanation, no markdown code blocks.
-6. Use \\textbf, \\textit for emphasis. Use itemize for bullet points.
-7. Section headers: Summary, Experience, Skills, Education, Certifications (if applicable).
-8. Make bullet points achievement-oriented with metrics where possible.`;
+## ABSOLUTE RULES
+1. **SINGLE PAGE ONLY** — The resume MUST fit on exactly ONE page. Use tight margins (0.4in–0.5in), compact spacing, and concise language. Never exceed one page.
+2. **PRESERVE IDENTITY** — Keep the candidate's REAL full name as the header. Keep real contact info (email, phone, LinkedIn, location) exactly as provided.
+3. **NO FABRICATION** — Never invent experience, companies, degrees, or certifications. Only rephrase, reframe, and optimize what exists.
+4. Return ONLY compilable LaTeX code starting with \\documentclass and ending with \\end{document}. No markdown fences, no explanations.
+
+## MULTI-STRATEGY OPTIMIZATION (apply ALL simultaneously)
+
+### Strategy 1: Keyword Saturation
+- Weave EVERY missing keyword naturally into bullet points, summary, and skills
+- Use exact phrases from the job description (not synonyms) for ATS matching
+- Place high-priority keywords in the top third of the resume
+
+### Strategy 2: Impact-First Bullet Points
+- Lead every bullet with a strong action verb (Spearheaded, Architected, Drove, Optimized, Delivered)
+- Follow the CAR formula: Challenge → Action → Result
+- Include quantified metrics: percentages, dollar amounts, team sizes, time saved
+- If no metrics exist, frame impact qualitatively (e.g., "across 3 product lines")
+
+### Strategy 3: Strategic Section Ordering
+- Name & Contact (header, compact single line)
+- Professional Summary (3 lines max — mirror the job title, years of experience, and top 3-4 skills from JD)
+- Core Competencies / Technical Skills (single block, keyword-dense, matching JD terminology exactly)
+- Professional Experience (reverse chronological, 3-5 bullets per role, most recent role gets most space)
+- Education & Certifications (compact, at bottom)
+
+### Strategy 4: Power Positioning
+- Summary must read like the candidate was BORN for this specific role
+- First bullet of each role should be the most impressive achievement
+- Skills section must mirror the exact technology/skill names from the job description
+- Use industry-specific terminology that signals deep domain expertise
+
+### Strategy 5: LaTeX Optimization for Single Page
+- Use \\documentclass[10pt]{article} or [11pt] depending on content volume
+- Margins: \\usepackage[top=0.4in,bottom=0.4in,left=0.5in,right=0.5in]{geometry}
+- Minimal vertical spacing: \\setlength{\\parskip}{0pt}, tight itemsep
+- No decorative elements — every pixel serves content
+- Use \\titlespacing to compress section headers
+- Skills as inline comma-separated list, NOT itemized
+
+## OUTPUT FORMAT
+Complete, compilable LaTeX using only: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor. Start with \\documentclass, end with \\end{document}.`;
 
     const userPrompt = `ORIGINAL RESUME:
 ${resumeText}
 
-JOB DESCRIPTION:
+TARGET JOB DESCRIPTION:
 ${jobDescription}
 
-CURRENTLY MATCHED KEYWORDS (keep these): ${matchedKeywords.slice(0, 20).join(', ')}
+MATCHED KEYWORDS (preserve these): ${matchedKeywords.slice(0, 20).join(', ')}
 
-MISSING KEYWORDS TO ADD NATURALLY: ${missingKeywords.slice(0, 30).join(', ')}
+MISSING KEYWORDS (MUST incorporate ALL): ${missingKeywords.slice(0, 30).join(', ')}
 
-Rewrite this resume in LaTeX, incorporating the missing keywords naturally throughout the content to maximize ATS score. Make it professional and compelling.`;
+Apply all 5 optimization strategies simultaneously. Create a SINGLE-PAGE LaTeX resume that makes the interviewer think "this is exactly who we need." The candidate's real name must be the header. Every line must earn its place on the page.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
