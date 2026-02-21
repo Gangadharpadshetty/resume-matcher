@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Code2, Loader2, Wand2, Copy, Check, FileDown, ExternalLink } from 'lucide-react';
+import { Download, Code2, Loader2, Wand2, Copy, Check, FileDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { ATSResult } from '@/lib/atsParser';
@@ -17,6 +17,7 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
 }) => {
   const [latexCode, setLatexCode] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCompiling, setIsCompiling] = useState(false);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -72,13 +73,45 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     toast({ title: 'Downloaded!', description: 'optimized-resume.tex saved to your device.' });
   };
 
-  const downloadPDF = () => {
-    // Encode LaTeX for latexonline.cc
-    const encoded = encodeURIComponent(latexCode);
-    // Use overleaf to compile - most reliable free option
-    const overleafUrl = `https://www.overleaf.com/docs?snip_uri=data:application/x-tex,${encoded}`;
-    window.open(overleafUrl, '_blank');
-    toast({ title: 'Opening Overleaf', description: 'Compile your LaTeX resume to PDF in Overleaf.' });
+  const downloadPDF = async () => {
+    setIsCompiling(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compile-latex`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ latexCode }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Compilation failed' }));
+        throw new Error(err.error || 'PDF compilation failed');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'optimized-resume.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'PDF Downloaded!', description: 'Your optimized resume PDF has been saved.' });
+    } catch (err: any) {
+      toast({
+        title: 'PDF compilation failed',
+        description: err?.message || 'Could not compile LaTeX to PDF. Try downloading the .tex file instead.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCompiling(false);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -180,10 +213,11 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
             </button>
             <button
               onClick={downloadPDF}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-secondary text-secondary-foreground hover:bg-muted transition-colors border border-border"
+              disabled={isCompiling}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-secondary text-secondary-foreground hover:bg-muted transition-colors border border-border disabled:opacity-50"
             >
-              <ExternalLink className="w-4 h-4" />
-              Compile PDF via Overleaf
+              {isCompiling ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+              {isCompiling ? 'Compiling PDF...' : 'Download PDF'}
             </button>
             <button
               onClick={copyToClipboard}
@@ -212,13 +246,11 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
             </pre>
           </div>
 
-          {/* Overleaf hint */}
+          {/* Hint */}
           <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
             <Download className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">To get a PDF:</span> Download the .tex file then compile it using{' '}
-              <button onClick={downloadPDF} className="text-primary underline underline-offset-2 hover:opacity-80">Overleaf</button>
-              {' '}(free, no install needed) or a local LaTeX editor like VS Code + LaTeX Workshop.
+              <span className="font-medium text-foreground">Download PDF</span> compiles your LaTeX resume to PDF directly. You can also download the .tex file for manual editing.
             </p>
           </div>
         </div>
