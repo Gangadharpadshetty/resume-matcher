@@ -54,12 +54,17 @@ serve(async (req) => {
 - Use \\documentclass[10pt]{article} or [11pt] depending on content volume
 - Margins: \\usepackage[top=0.4in,bottom=0.4in,left=0.5in,right=0.5in]{geometry}
 - Minimal vertical spacing: \\setlength{\\parskip}{0pt}, tight itemsep
-- No decorative elements — every pixel serves content
-- Use \\titlespacing to compress section headers
+- Use \\titlespacing* from the titlesec package to compress section headers
 - Skills as inline comma-separated list, NOT itemized
+- No decorative elements — every pixel serves content
 
 ## OUTPUT FORMAT
-Complete, compilable LaTeX using only: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor. Start with \\documentclass, end with \\end{document}.`;
+Complete, compilable LaTeX using ONLY these packages: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor.
+CRITICAL RESTRICTIONS:
+- Do NOT use fontspec, fontawesome, fontawesome5, lmodern, or any font package that requires XeTeX/LuaTeX.
+- Do NOT use \\usepackage{titlespacing} — titlespacing is NOT a real package. Use \\titlespacing* from the titlesec package instead.
+- The code MUST compile with pdflatex (NOT xelatex or lualatex).
+- Start with \\documentclass, end with \\end{document}.`;
 
     const userPrompt = `ORIGINAL RESUME:
 ${resumeText}
@@ -112,6 +117,14 @@ Apply all 5 optimization strategies simultaneously. Create a SINGLE-PAGE LaTeX r
 
     // Strip markdown code fences if present
     latexCode = latexCode.replace(/^```latex\n?/i, "").replace(/^```\n?/i, "").replace(/\n?```$/i, "").trim();
+
+    // Sanitize: remove packages incompatible with pdflatex
+    latexCode = latexCode.replace(/\\usepackage\{fontspec\}\n?/g, "");
+    latexCode = latexCode.replace(/\\usepackage\{fontawesome5?\}\n?/g, "");
+    latexCode = latexCode.replace(/\\usepackage\{titlespacing\}\n?/g, "");
+    latexCode = latexCode.replace(/\\usepackage\[?[^\]]*\]?\{lmodern\}\n?/g, "");
+    // Remove any \setmainfont or \setsansfont commands (fontspec-only)
+    latexCode = latexCode.replace(/\\set(main|sans|mono)font\{[^}]*\}\n?/g, "");
 
     return new Response(
       JSON.stringify({ latexCode }),
