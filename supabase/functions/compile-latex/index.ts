@@ -11,8 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { latexCode } = await req.json();
+    let { latexCode } = await req.json();
     if (!latexCode) throw new Error("No LaTeX code provided");
+
+    // Sanitize: remove packages incompatible with pdflatex
+    latexCode = latexCode.replace(/\\usepackage\{fontspec\}\n?/g, "");
+    latexCode = latexCode.replace(/\\usepackage\{fontawesome5?\}\n?/g, "");
+    latexCode = latexCode.replace(/\\usepackage\{titlespacing\}\n?/g, "");
+    latexCode = latexCode.replace(/\\set(main|sans|mono)font\{[^}]*\}\n?/g, "");
 
     // Use YtoTech LaTeX API to compile to PDF
     const response = await fetch("https://latex.ytotech.com/builds/sync", {
