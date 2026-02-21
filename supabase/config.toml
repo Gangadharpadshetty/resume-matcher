@@ -2,3 +2,6 @@ project_id = "xseklnmgggguikzkmvjb"
 
 [functions.generate-resume]
 verify_jwt = false
+
+[functions.compile-latex]
+verify_jwt = false
