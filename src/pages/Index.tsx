@@ -1,15 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { Zap, FileText, Briefcase, BarChart3, Github, Sparkles } from 'lucide-react';
+import { Zap, FileText, Briefcase, BarChart3, Github, Sparkles, Link, Loader2 } from 'lucide-react';
 import { ResumeUpload } from '@/components/ResumeUpload';
 import { ScoreRing } from '@/components/ScoreRing';
 import { KeywordAnalysis } from '@/components/KeywordAnalysis';
 import { LatexGenerator } from '@/components/LatexGenerator';
 import { analyzeResume, type ATSResult } from '@/lib/atsParser';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [resumeText, setResumeText] = useState('');
   const [resumeFileName, setResumeFileName] = useState<string | undefined>();
   const [jobDescription, setJobDescription] = useState('');
+  const [jobUrl, setJobUrl] = useState('');
+  const [isFetchingJob, setIsFetchingJob] = useState(false);
   const [atsResult, setAtsResult] = useState<ATSResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -111,14 +115,54 @@ const Index = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold font-display">Job Description</h3>
-                  <p className="text-xs text-muted-foreground">Paste the full job posting</p>
+                  <p className="text-xs text-muted-foreground">Paste a link or the full job posting</p>
                 </div>
               </div>
+
+              {/* URL Input */}
+              <div className="flex gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="url"
+                    value={jobUrl}
+                    onChange={e => setJobUrl(e.target.value)}
+                    placeholder="Paste job posting URL (LinkedIn, Indeed, etc.)"
+                    className="w-full pl-9 pr-3 py-2.5 bg-muted border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!jobUrl.trim()) return;
+                    setIsFetchingJob(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('fetch-job-description', {
+                        body: { url: jobUrl.trim() },
+                      });
+                      if (error) throw error;
+                      if (!data.success) throw new Error(data.error);
+                      setJobDescription(data.text);
+                      setAtsResult(null);
+                      toast.success('Job description fetched successfully');
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to fetch job description');
+                    } finally {
+                      setIsFetchingJob(false);
+                    }
+                  }}
+                  disabled={!jobUrl.trim() || isFetchingJob}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  {isFetchingJob ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link className="w-3.5 h-3.5" />}
+                  Fetch
+                </button>
+              </div>
+
               <textarea
                 value={jobDescription}
                 onChange={e => { setJobDescription(e.target.value); setAtsResult(null); }}
-                placeholder="Paste the job description here — include requirements, responsibilities, qualifications..."
-                className="w-full h-52 px-4 py-3 bg-muted border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all leading-relaxed"
+                placeholder="Or paste the job description text here — include requirements, responsibilities, qualifications..."
+                className="w-full h-44 px-4 py-3 bg-muted border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all leading-relaxed"
               />
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-muted-foreground">
@@ -126,7 +170,7 @@ const Index = () => {
                 </span>
                 {jobDescription && (
                   <button
-                    onClick={() => { setJobDescription(''); setAtsResult(null); }}
+                    onClick={() => { setJobDescription(''); setJobUrl(''); setAtsResult(null); }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Clear
