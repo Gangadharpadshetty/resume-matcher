@@ -5,100 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function extractJsonLdJobPosting(html: string): string | null {
-  // Look for JSON-LD structured data (most job boards include this)
-  const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let match;
-  while ((match = jsonLdRegex.exec(html)) !== null) {
-    try {
-      const data = JSON.parse(match[1]);
-      const jobData = Array.isArray(data)
-        ? data.find((d: any) => d["@type"] === "JobPosting")
-        : data["@type"] === "JobPosting" ? data : null;
-
-      if (jobData) {
-        const parts: string[] = [];
-        if (jobData.title) parts.push(`Job Title: ${jobData.title}`);
-        if (jobData.hiringOrganization?.name) parts.push(`Company: ${jobData.hiringOrganization.name}`);
-        if (jobData.jobLocation) {
-          const loc = Array.isArray(jobData.jobLocation) ? jobData.jobLocation[0] : jobData.jobLocation;
-          if (loc?.address) {
-            const addr = loc.address;
-            parts.push(`Location: ${[addr.addressLocality, addr.addressRegion, addr.addressCountry].filter(Boolean).join(", ")}`);
-          }
-        }
-        if (jobData.employmentType) parts.push(`Type: ${Array.isArray(jobData.employmentType) ? jobData.employmentType.join(", ") : jobData.employmentType}`);
-        if (jobData.description) {
-          // Strip HTML from description
-          let desc = jobData.description
-            .replace(/<br\s*\/?>/gi, "\n")
-            .replace(/<\/?(p|div|h[1-6]|li|tr|section|ul|ol)[^>]*>/gi, "\n")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/&nbsp;/g, " ")
-            .replace(/&amp;/g, "&")
-            .replace(/&lt;/g, "<")
-            .replace(/&gt;/g, ">")
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&rsquo;/g, "'")
-            .replace(/&lsquo;/g, "'")
-            .replace(/&rdquo;/g, '"')
-            .replace(/&ldquo;/g, '"')
-            .replace(/&mdash;/g, "—")
-            .replace(/&ndash;/g, "–")
-            .replace(/&bull;/g, "•")
-            .replace(/&#\d+;/g, "")
-            .replace(/[ \t]+/g, " ")
-            .replace(/\n\s*\n/g, "\n\n")
-            .trim();
-          parts.push(`\nJob Description:\n${desc}`);
-        }
-        if (jobData.qualifications || jobData.skills) {
-          const q = jobData.qualifications || jobData.skills;
-          parts.push(`\nQualifications:\n${typeof q === "string" ? q : JSON.stringify(q)}`);
-        }
-        if (jobData.responsibilities) {
-          parts.push(`\nResponsibilities:\n${typeof jobData.responsibilities === "string" ? jobData.responsibilities : JSON.stringify(jobData.responsibilities)}`);
-        }
-        return parts.join("\n");
-      }
-    } catch {
-      // Invalid JSON, continue
-    }
-  }
-  return null;
-}
-
-function extractFromMeta(html: string): string {
-  const parts: string[] = [];
-  // og:title
-  const titleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)
-    || html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch) parts.push(`Job Title: ${titleMatch[1].trim()}`);
-
-  // og:description
-  const descMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
-    || html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-  if (descMatch) parts.push(`Summary: ${descMatch[1].trim()}`);
-
-  return parts.join("\n");
-}
-
-function extractFromHtml(html: string): string {
-  let text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
-    .replace(/<header[\s\S]*?<\/header>/gi, "")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
-    .replace(/<!--[\s\S]*?-->/g, "");
-
-  text = text
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/?(p|div|h[1-6]|li|tr|section|article)[^>]*>/gi, "\n")
-    .replace(/<\/?(ul|ol)[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
+function decodeEntities(text: string): string {
+  return text
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -112,13 +20,113 @@ function extractFromHtml(html: string): string {
     .replace(/&mdash;/g, "—")
     .replace(/&ndash;/g, "–")
     .replace(/&bull;/g, "•")
-    .replace(/&#\d+;/g, "")
+    .replace(/&hellip;/g, "…")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&[a-zA-Z]+;/g, " ");
+}
+
+function stripHtmlToText(html: string): string {
+  let text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
+
+  // Convert structural elements to newlines
+  text = text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr|section|article|blockquote|dd|dt)>/gi, "\n")
+    .replace(/<(p|div|h[1-6]|section|article|blockquote)[^>]*>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n• ")
+    .replace(/<\/?(ul|ol|dl|table|tbody|thead)[^>]*>/gi, "\n");
+
+  // Remove all remaining tags
+  text = text.replace(/<[^>]+>/g, " ");
+
+  text = decodeEntities(text);
+
+  // Clean whitespace
+  text = text
     .replace(/[ \t]+/g, " ")
-    .replace(/\n\s*\n/g, "\n\n")
+    .replace(/\n /g, "\n")
+    .replace(/ \n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .replace(/^\s+|\s+$/gm, "")
     .trim();
 
   return text;
+}
+
+function extractJsonLdJobPosting(html: string): string | null {
+  const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = jsonLdRegex.exec(html)) !== null) {
+    try {
+      let data = JSON.parse(match[1]);
+      // Handle @graph arrays
+      if (data["@graph"]) data = data["@graph"];
+      const items = Array.isArray(data) ? data : [data];
+      const jobData = items.find((d: any) => d["@type"] === "JobPosting");
+
+      if (jobData) {
+        const parts: string[] = [];
+        if (jobData.title) parts.push(`Job Title: ${jobData.title}`);
+        if (jobData.hiringOrganization?.name) parts.push(`Company: ${jobData.hiringOrganization.name}`);
+        if (jobData.jobLocation) {
+          const locs = Array.isArray(jobData.jobLocation) ? jobData.jobLocation : [jobData.jobLocation];
+          const locStrings = locs.map((loc: any) => {
+            if (loc?.address) {
+              const a = loc.address;
+              return [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean).join(", ");
+            }
+            return loc?.name || "";
+          }).filter(Boolean);
+          if (locStrings.length) parts.push(`Location: ${locStrings.join(" | ")}`);
+        }
+        if (jobData.employmentType) {
+          const et = Array.isArray(jobData.employmentType) ? jobData.employmentType.join(", ") : jobData.employmentType;
+          parts.push(`Type: ${et}`);
+        }
+        if (jobData.description) {
+          parts.push(`\nJob Description:\n${stripHtmlToText(jobData.description)}`);
+        }
+        if (jobData.qualifications) {
+          const q = typeof jobData.qualifications === "string" ? stripHtmlToText(jobData.qualifications) : JSON.stringify(jobData.qualifications);
+          parts.push(`\nQualifications:\n${q}`);
+        }
+        if (jobData.responsibilities) {
+          const r = typeof jobData.responsibilities === "string" ? stripHtmlToText(jobData.responsibilities) : JSON.stringify(jobData.responsibilities);
+          parts.push(`\nResponsibilities:\n${r}`);
+        }
+        if (jobData.skills) {
+          const s = typeof jobData.skills === "string" ? stripHtmlToText(jobData.skills) : JSON.stringify(jobData.skills);
+          parts.push(`\nSkills:\n${s}`);
+        }
+        const result = parts.join("\n");
+        if (result.length > 100) return result;
+      }
+    } catch {
+      // Invalid JSON, continue
+    }
+  }
+  return null;
+}
+
+function extractMainContent(html: string): string {
+  // Try to find main content area
+  const mainMatch = html.match(/<main[\s\S]*?<\/main>/i)
+    || html.match(/<article[\s\S]*?<\/article>/i)
+    || html.match(/<div[^>]*class="[^"]*(?:job|posting|description|content|details)[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+
+  const content = mainMatch ? mainMatch[0] : html;
+
+  // Remove nav, header, footer, sidebar from the content
+  let cleaned = content
+    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+    .replace(/<aside[\s\S]*?<\/aside>/gi, "");
+
+  return stripHtmlToText(cleaned);
 }
 
 serve(async (req) => {
@@ -158,12 +166,10 @@ serve(async (req) => {
     let text = extractJsonLdJobPosting(html);
     let source = "json-ld";
 
-    // Strategy 2: Meta tags + HTML fallback
+    // Strategy 2: Extract main content area
     if (!text || text.length < 100) {
-      const meta = extractFromMeta(html);
-      const body = extractFromHtml(html);
-      text = meta ? `${meta}\n\n${body}` : body;
-      source = "html";
+      text = extractMainContent(html);
+      source = "html-main";
     }
 
     if (text.length > 15000) {
