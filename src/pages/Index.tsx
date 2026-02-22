@@ -9,8 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [resumeText, setResumeText] = useState('');
-  const [resumeFileName, setResumeFileName] = useState<string | undefined>();
+  const [resumeText, setResumeText] = useState(() => localStorage.getItem('resumeText') || '');
+  const [resumeFileName, setResumeFileName] = useState<string | undefined>(() => localStorage.getItem('resumeFileName') || undefined);
   const [jobDescription, setJobDescription] = useState('');
   const [jobUrl, setJobUrl] = useState('');
   const [isFetchingJob, setIsFetchingJob] = useState(false);
@@ -19,7 +19,12 @@ const Index = () => {
 
   const handleResumeChange = useCallback((text: string, fileName?: string) => {
     setResumeText(text);
-    if (fileName !== undefined) setResumeFileName(fileName);
+    localStorage.setItem('resumeText', text);
+    if (fileName !== undefined) {
+      setResumeFileName(fileName);
+      if (fileName) localStorage.setItem('resumeFileName', fileName);
+      else localStorage.removeItem('resumeFileName');
+    }
     setAtsResult(null);
   }, []);
 
