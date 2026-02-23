@@ -62,6 +62,13 @@ const Index = () => {
               <span className="text-xs font-medium text-primary">AI-Powered</span>
             </div>
             <a
+              href="/jobs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-muted border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Fresher Jobs</span>
+            </a>
+            <a
               href="https://github.com/Gangadharpadshetty/resume-matcher"
               target="_blank"
               rel="noopener noreferrer"

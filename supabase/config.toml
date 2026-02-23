@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.compile-latex]
 verify_jwt = false
+
+[functions.scrape-jobs]
+verify_jwt = false
+
+[functions.fetch-job-description]
+verify_jwt = false
