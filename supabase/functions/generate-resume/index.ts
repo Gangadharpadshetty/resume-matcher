@@ -45,20 +45,54 @@ serve(async (req) => {
 - Prioritize the most important missing keywords over trying to fit all of them
 - Target 90%+ ATS keyword match score
 
-## WRITING STYLE
-- Sound confident and industry-ready, not academic
-- Use clear, direct, technical language
-- Vary action verbs naturally — don't repeat the same verb
-- Include real numbers. If the original resume lacks metrics, infer reasonable ones from context (e.g., "Built API" → "Engineered RESTful API serving 10K+ daily requests with 99.9% uptime")
-- The summary should read like a confident elevator pitch from someone who ships production code
+## ROLE ALIGNMENT: BACKEND + AI ENGINEER
+Align the resume for Backend and AI Engineer roles specifically. Weave in these domain-specific terms naturally:
 
-## STRUCTURE
-1. **Name & Contact** — Clean header, single line (name, email, phone, LinkedIn, GitHub)
-2. **Professional Summary** — 2–3 sentences: who you are, what you do best, what value you bring. No generic fluff. Sound like an engineer who ships.
-3. **Technical Skills** — Organized by category (Languages, Frameworks, Databases, Cloud/DevOps, Tools), matching JD terminology, comma-separated
-4. **Experience** — Reverse chronological, 3–5 impact-driven bullets per role. Each bullet = Action Verb + Technical Detail + Measurable Outcome
-5. **Projects** (if relevant) — 2–3 bullets each showing technical depth, architecture decisions, and scale
-6. **Education** — Compact, at the bottom. Include relevant coursework only if early-career.
+### Distributed Systems
+- Microservices architecture, service mesh, event-driven architecture, message queues (Kafka, RabbitMQ, SQS)
+- Distributed caching (Redis, Memcached), sharding, replication, consensus protocols
+- CAP theorem tradeoffs, eventual consistency, idempotency, circuit breakers, retry policies
+
+### System Design
+- Horizontal scaling, load balancing, rate limiting, API gateway, reverse proxy
+- Database indexing, query optimization, connection pooling, read replicas
+- Caching strategies (write-through, write-back, cache-aside), CDN, message brokers
+
+### Observability & Monitoring
+- Structured logging (ELK stack, Fluentd), distributed tracing (Jaeger, OpenTelemetry)
+- Metrics collection (Prometheus, Grafana, Datadog), alerting, SLOs/SLIs/SLAs
+- APM (Application Performance Monitoring), error tracking (Sentry), health checks
+
+### Scalability Metrics
+- Concurrent users, QPS (queries per second), RPS (requests per second)
+- Load handling (peak traffic, auto-scaling), horizontal/vertical scaling
+- Connection pool sizing, thread pool optimization, async processing
+
+### DevOps & CI/CD
+- CI/CD pipelines (GitHub Actions, Azure DevOps, Jenkins, GitLab CI)
+- Infrastructure as Code (Terraform, CloudFormation, Pulumi)
+- Container orchestration (Docker, Kubernetes, ECS), service discovery
+- Blue-green deployments, canary releases, feature flags, rollback strategies
+
+### Cloud Platforms
+- AWS (EC2, S3, Lambda, RDS, SQS, SNS, EKS, DynamoDB, CloudWatch)
+- GCP (Cloud Run, BigQuery, Pub/Sub, GKE, Cloud Functions)
+- Azure (App Service, AKS, Cosmos DB, Azure Functions, Event Hubs)
+
+### AI/ML Engineering
+- LLM integration (OpenAI, Gemini, Claude), RAG pipelines, vector databases (Pinecone, Weaviate, pgvector)
+- Model serving (TensorFlow Serving, TorchServe, Triton), ML pipelines (MLflow, Kubeflow)
+- Embedding generation, semantic search, prompt engineering, fine-tuning
+- Feature stores, A/B testing for models, model versioning
+
+## PROJECT DESCRIPTIONS
+- Rewrite project descriptions to sound production-grade, not academic
+- Frame projects as if they were shipped to production with real users
+- Include architecture decisions: "Designed event-driven microservices architecture using Kafka for async processing"
+- Include scale: "Handles 50K+ daily requests" or "Processes 1M+ records"
+- If the candidate has any AI/ML project, rewrite it to sound industry-level, e.g.:
+  "Architected RAG pipeline using LangChain + pgvector, achieving 92% retrieval accuracy across 100K+ documents with sub-200ms p95 query latency"
+- If no AI project exists, suggest adding one in the output as a comment
 
 ## PERFORMANCE METRICS TO WEAVE IN
 When rewriting bullets, look for opportunities to add:
@@ -69,6 +103,7 @@ When rewriting bullets, look for opportunities to add:
 - Deployment frequency (daily deploys, MTTR reduction)
 - Scale indicators (data volume, user count, request volume)
 - Availability/reliability (uptime %, error rate reduction)
+- Cache hit rates, connection pool utilization, error rates
 
 ## LaTeX RULES
 - Use ONLY: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor
