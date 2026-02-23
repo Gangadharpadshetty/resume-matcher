@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      jobs: {
+        Row: {
+          apply_url: string
+          company: string
+          description: string | null
+          experience_level: string | null
+          external_id: string | null
+          id: string
+          is_active: boolean
+          location: string | null
+          platform: string
+          posted_at: string | null
+          scraped_at: string
+          skills: string[] | null
+          title: string
+        }
+        Insert: {
+          apply_url: string
+          company: string
+          description?: string | null
+          experience_level?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          platform: string
+          posted_at?: string | null
+          scraped_at?: string
+          skills?: string[] | null
+          title: string
+        }
+        Update: {
+          apply_url?: string
+          company?: string
+          description?: string | null
+          experience_level?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          platform?: string
+          posted_at?: string | null
+          scraped_at?: string
+          skills?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      saved_jobs: {
+        Row: {
+          id: string
+          job_id: string
+          saved_at: string
+          session_id: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          saved_at?: string
+          session_id: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          saved_at?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_jobs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
