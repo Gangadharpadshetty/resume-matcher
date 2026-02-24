@@ -105,77 +105,132 @@ When rewriting bullets, look for opportunities to add:
 - Availability/reliability (uptime %, error rate reduction)
 - Cache hit rates, connection pool utilization, error rates
 
-## LaTeX FORMATTING (FAANG-LEVEL PRECISION)
-- Use ONLY: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor, tabularx
+## LaTeX TEMPLATE — JAKE'S RESUME (FAANG STANDARD)
+This is THE standard resume template used by engineers who got into Google, Meta, Amazon, Apple, Netflix.
+You MUST use this exact preamble and structure. Do NOT deviate.
+
 - Do NOT use fontspec, fontawesome, lmodern, or any XeTeX/LuaTeX package
-- Do NOT use \\usepackage{titlespacing} — use \\titlespacing* from titlesec instead
 - Must compile with pdflatex
-- Start with \\documentclass[10pt]{article}, end with \\end{document}
+- Start with \\documentclass, end with \\end{document}
+- Output ONLY the LaTeX code, nothing else
 
-### EXACT LAYOUT TEMPLATE
-Use this precise structure for pixel-perfect FAANG formatting:
+### EXACT PREAMBLE (copy verbatim):
+\\documentclass[letterpaper,10pt]{article}
 
-\\documentclass[10pt]{article}
-\\usepackage[letterpaper,margin=0.45in,top=0.4in,bottom=0.4in]{geometry}
+\\usepackage{latexsym}
+\\usepackage[empty]{fullpage}
+\\usepackage{titlesec}
+\\usepackage[usenames,dvipsnames]{color}
+\\usepackage{enumitem}
+\\usepackage[hidelinks]{hyperref}
+\\usepackage[english]{babel}
 \\usepackage[T1]{fontenc}
 \\usepackage[utf8]{inputenc}
-\\usepackage{enumitem}
-\\usepackage{titlesec}
-\\usepackage[hidelinks]{hyperref}
-\\usepackage{xcolor}
 \\usepackage{tabularx}
 
-% Tight spacing
-\\setlength{\\parindent}{0pt}
-\\setlength{\\parskip}{0pt}
-\\pagestyle{empty}
+\\addtolength{\\oddsidemargin}{-0.5in}
+\\addtolength{\\evensidemargin}{-0.5in}
+\\addtolength{\\textwidth}{1in}
+\\addtolength{\\topmargin}{-0.5in}
+\\addtolength{\\textheight}{1.0in}
 
-% Section formatting — clean horizontal rules
-\\titleformat{\\section}{\\vspace{-6pt}\\scshape\\large\\bfseries}{}{0em}{}[\\vspace{-4pt}\\titlerule\\vspace{-4pt}]
-\\titlespacing*{\\section}{0pt}{6pt}{4pt}
+\\urlstyle{same}
+\\raggedbottom
+\\raggedright
+\\setlength{\\tabcolsep}{0in}
 
-% Tight bullet lists
-\\setlist[itemize]{leftmargin=12pt,itemsep=1pt,parsep=0pt,topsep=2pt}
+% Section formatting
+\\titleformat{\\section}{\\vspace{-4pt}\\scshape\\raggedright\\large}{}{0em}{}[\\color{black}\\titlerule\\vspace{-5pt}]
 
-### HEADER FORMAT (single block, no table):
-{\\centering
-{\\LARGE\\bfseries CANDIDATE NAME}\\\\[3pt]
-{\\small email@domain.com \\textbar\\ +1-XXX-XXX-XXXX \\textbar\\ \\href{https://linkedin.com/in/handle}{LinkedIn} \\textbar\\ \\href{https://github.com/handle}{GitHub}}\\\\
+% Custom commands
+\\newcommand{\\resumeItem}[1]{\\item\\small{#1 \\vspace{-2pt}}}
+\\newcommand{\\resumeSubheading}[4]{
+  \\vspace{-2pt}\\item
+    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
+      \\textbf{#1} & #2 \\\\
+      \\textit{\\small#3} & \\textit{\\small #4} \\\\
+    \\end{tabular*}\\vspace{-7pt}
 }
+\\newcommand{\\resumeProjectHeading}[2]{
+    \\item
+    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
+      \\small#1 & #2 \\\\
+    \\end{tabular*}\\vspace{-7pt}
+}
+\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
+\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
+\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
+\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
 
-### SECTION ORDER (strictly follow):
-1. Header (Name + Contact — single centered block)
-2. Professional Summary (2-3 sentences, confident elevator pitch)
-3. Technical Skills (categorized: Languages | Frameworks | Databases | Cloud/DevOps | Tools)
-4. Experience (reverse chronological, 3-5 bullets each)
-5. Projects (2-3 bullets each, production-grade descriptions)
-6. Education (compact, bottom)
+\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
+
+### HEADER FORMAT:
+\\begin{center}
+  \\textbf{\\Huge\\scshape Candidate Name} \\\\ \\vspace{1pt}
+  \\small phone \\textbar{} \\href{mailto:email}{\\underline{email}} \\textbar{}
+  \\href{https://linkedin.com/in/handle}{\\underline{LinkedIn}} \\textbar{}
+  \\href{https://github.com/handle}{\\underline{GitHub}}
+\\end{center}
+
+### EDUCATION FORMAT:
+\\section{Education}
+\\resumeSubHeadingListStart
+  \\resumeSubheading{University Name}{Location}{Degree -- Major (GPA: X.XX/10)}{Start -- End}
+\\resumeSubHeadingListEnd
 
 ### EXPERIENCE FORMAT:
-\\textbf{Job Title} \\hfill \\textbf{Start -- End}\\\\
-\\textit{Company Name} \\hfill \\textit{Location}
-\\begin{itemize}
-  \\item Engineered X using Y, achieving Z metric improvement
+\\section{Experience}
+\\resumeSubHeadingListStart
+  \\resumeSubheading{Job Title}{Start -- End}{Company Name}{Location}
+  \\resumeItemListStart
+    \\resumeItem{Engineered X using Y, reducing Z by N\\%}
+  \\resumeItemListEnd
+\\resumeSubHeadingListEnd
+
+### PROJECTS FORMAT:
+\\section{Projects}
+\\resumeSubHeadingListStart
+  \\resumeProjectHeading{\\textbf{Project Name} $|$ \\emph{Tech Stack}}{Date}
+  \\resumeItemListStart
+    \\resumeItem{Built X that handles Y scale with Z performance}
+  \\resumeItemListEnd
+\\resumeSubHeadingListEnd
+
+### SKILLS FORMAT:
+\\section{Technical Skills}
+\\begin{itemize}[leftmargin=0.15in, label={}]
+  \\small{\\item{
+    \\textbf{Languages}{: Python, Java, C++, JavaScript, TypeScript, SQL} \\\\
+    \\textbf{Frameworks}{: React, Node.js, FastAPI, Spring Boot, Django} \\\\
+    \\textbf{Databases}{: PostgreSQL, MongoDB, Redis, DynamoDB} \\\\
+    \\textbf{DevOps/Cloud}{: AWS, Docker, Kubernetes, CI/CD, Terraform, GitHub Actions} \\\\
+    \\textbf{Tools}{: Git, Linux, Kafka, Prometheus, Grafana}
+  }}
 \\end{itemize}
 
-### SKILLS FORMAT (use tabularx for clean alignment):
-\\begin{tabularx}{\\textwidth}{@{}l X@{}}
-\\textbf{Languages:} & Python, Java, C++, JavaScript, TypeScript, SQL, Go \\\\
-\\textbf{Frameworks:} & FastAPI, Spring Boot, React, Node.js, Django, Flask \\\\
-\\textbf{Databases:} & PostgreSQL, MongoDB, Redis, DynamoDB, Elasticsearch \\\\
-\\textbf{Cloud/DevOps:} & AWS, GCP, Docker, Kubernetes, Terraform, CI/CD, GitHub Actions \\\\
-\\textbf{Tools:} & Git, Kafka, RabbitMQ, Prometheus, Grafana, Datadog, Sentry \\\\
-\\end{tabularx}
+### SECTION ORDER FOR FRESHERS/EARLY CAREER:
+1. Header (centered name + contact)
+2. Education (put first for early career)
+3. Experience (if any internships/jobs)
+4. Projects (critical section — make these shine)
+5. Technical Skills (at bottom, keyword-dense)
 
-### ALIGNMENT RULES:
-- Job title and date MUST be on the same line using \\hfill
-- Company and location MUST be on the same line using \\hfill
-- All sections MUST use consistent spacing
-- No orphan lines or widows — everything fits on ONE page
-- Use \\vspace{-Xpt} aggressively to remove excess whitespace
-- Skills section must use tabularx for clean column alignment
-- Contact info must be centered, single line, pipe-separated
-- Section headings must use \\titlerule for professional horizontal lines`;
+### SECTION ORDER FOR EXPERIENCED (1+ years):
+1. Header
+2. Professional Summary (2 lines, optional)
+3. Experience
+4. Projects
+5. Technical Skills
+6. Education (bottom)
+
+### CRITICAL RULES:
+- Use \\resumeSubheading for every job and education entry
+- Use \\resumeProjectHeading for every project
+- Use \\resumeItem for every bullet point
+- Use \\resumeItemListStart and \\resumeItemListEnd to wrap bullets
+- ALL dates right-aligned via tabular* with \\extracolsep{\\fill}
+- MUST fit single page — adjust \\vspace if needed
+- Links must use \\underline inside \\href for visibility`;
 
     const userPrompt = `Here is the candidate's current resume:
 ${resumeText}
