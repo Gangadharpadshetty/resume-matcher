@@ -172,11 +172,13 @@ You MUST use this exact preamble and structure. Do NOT deviate.
   \\href{https://github.com/handle}{\\underline{GitHub}}
 \\end{center}
 
-### EDUCATION FORMAT:
+### EDUCATION FORMAT (MUST have exactly 4 arguments — no exceptions):
 \\section{Education}
 \\resumeSubHeadingListStart
   \\resumeSubheading{University Name}{Location}{Degree -- Major (GPA: X.XX/10)}{Start -- End}
 \\resumeSubHeadingListEnd
+CRITICAL: \\resumeSubheading ALWAYS takes EXACTLY 4 brace arguments: {A}{B}{C}{D}. NEVER use 2 args.
+CRITICAL: \\resumeItem ALWAYS takes EXACTLY 1 brace argument: {text}. NEVER write \\resumeItem{a}{b}.
 
 ### EXPERIENCE FORMAT:
 \\section{Experience}
@@ -224,13 +226,14 @@ You MUST use this exact preamble and structure. Do NOT deviate.
 6. Education (bottom)
 
 ### CRITICAL RULES:
-- Use \\resumeSubheading for every job and education entry
-- Use \\resumeProjectHeading for every project
-- Use \\resumeItem for every bullet point
+- \\resumeSubheading MUST have EXACTLY 4 brace groups. Education: {University}{Location}{Degree}{Dates}. Experience: {Title}{Dates}{Company}{Location}.
+- \\resumeItem MUST have EXACTLY 1 brace group: \\resumeItem{single text block}.
+- \\resumeProjectHeading MUST have EXACTLY 2 brace groups.
 - Use \\resumeItemListStart and \\resumeItemListEnd to wrap bullets
 - ALL dates right-aligned via tabular* with \\extracolsep{\\fill}
 - MUST fit single page — adjust \\vspace if needed
-- Links must use \\underline inside \\href for visibility`;
+- Links must use \\underline inside \\href for visibility
+- For Achievements section: use \\resumeSubHeadingListStart/End wrapper OR plain \\begin{itemize}, NOT bare \\resumeItemListStart`;
 
     const userPrompt = `Here is the candidate's current resume:
 ${resumeText}
@@ -295,8 +298,20 @@ TASK: Rewrite this resume as a FAANG-level engineering manager would optimize it
     latexCode = latexCode.replace(/\\usepackage\{fontawesome5?\}\n?/g, "");
     latexCode = latexCode.replace(/\\usepackage\{titlespacing\}\n?/g, "");
     latexCode = latexCode.replace(/\\usepackage\[?[^\]]*\]?\{lmodern\}\n?/g, "");
-    // Remove any \setmainfont or \setsansfont commands (fontspec-only)
     latexCode = latexCode.replace(/\\set(main|sans|mono)font\{[^}]*\}\n?/g, "");
+
+    // Fix common structural issues:
+    // Fix \resumeItem with 2 args: \resumeItem{text1}{text2} -> \resumeItem{text1 -- text2}
+    latexCode = latexCode.replace(/\\resumeItem\{([^}]*)\}\{([^}]*)\}/g, "\\resumeItem{$1 -- $2}");
+    
+    // Fix bare \resumeItemListStart not inside a SubHeadingList (for Achievements sections)
+    // Ensure \begin{document} and \end{document} exist
+    if (!latexCode.includes("\\begin{document}")) {
+      latexCode = latexCode.replace(/(\\begin\{center\})/, "\\begin{document}\n$1");
+    }
+    if (!latexCode.includes("\\end{document}")) {
+      latexCode += "\n\\end{document}";
+    }
 
     return new Response(
       JSON.stringify({ latexCode }),
