@@ -105,12 +105,77 @@ When rewriting bullets, look for opportunities to add:
 - Availability/reliability (uptime %, error rate reduction)
 - Cache hit rates, connection pool utilization, error rates
 
-## LaTeX RULES
-- Use ONLY: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor
+## LaTeX FORMATTING (FAANG-LEVEL PRECISION)
+- Use ONLY: geometry, enumitem, hyperref, fontenc, inputenc, titlesec, xcolor, tabularx
 - Do NOT use fontspec, fontawesome, lmodern, or any XeTeX/LuaTeX package
 - Do NOT use \\usepackage{titlespacing} — use \\titlespacing* from titlesec instead
 - Must compile with pdflatex
-- Start with \\documentclass, end with \\end{document}`;
+- Start with \\documentclass[10pt]{article}, end with \\end{document}
+
+### EXACT LAYOUT TEMPLATE
+Use this precise structure for pixel-perfect FAANG formatting:
+
+\\documentclass[10pt]{article}
+\\usepackage[letterpaper,margin=0.45in,top=0.4in,bottom=0.4in]{geometry}
+\\usepackage[T1]{fontenc}
+\\usepackage[utf8]{inputenc}
+\\usepackage{enumitem}
+\\usepackage{titlesec}
+\\usepackage[hidelinks]{hyperref}
+\\usepackage{xcolor}
+\\usepackage{tabularx}
+
+% Tight spacing
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0pt}
+\\pagestyle{empty}
+
+% Section formatting — clean horizontal rules
+\\titleformat{\\section}{\\vspace{-6pt}\\scshape\\large\\bfseries}{}{0em}{}[\\vspace{-4pt}\\titlerule\\vspace{-4pt}]
+\\titlespacing*{\\section}{0pt}{6pt}{4pt}
+
+% Tight bullet lists
+\\setlist[itemize]{leftmargin=12pt,itemsep=1pt,parsep=0pt,topsep=2pt}
+
+### HEADER FORMAT (single block, no table):
+{\\centering
+{\\LARGE\\bfseries CANDIDATE NAME}\\\\[3pt]
+{\\small email@domain.com \\textbar\\ +1-XXX-XXX-XXXX \\textbar\\ \\href{https://linkedin.com/in/handle}{LinkedIn} \\textbar\\ \\href{https://github.com/handle}{GitHub}}\\\\
+}
+
+### SECTION ORDER (strictly follow):
+1. Header (Name + Contact — single centered block)
+2. Professional Summary (2-3 sentences, confident elevator pitch)
+3. Technical Skills (categorized: Languages | Frameworks | Databases | Cloud/DevOps | Tools)
+4. Experience (reverse chronological, 3-5 bullets each)
+5. Projects (2-3 bullets each, production-grade descriptions)
+6. Education (compact, bottom)
+
+### EXPERIENCE FORMAT:
+\\textbf{Job Title} \\hfill \\textbf{Start -- End}\\\\
+\\textit{Company Name} \\hfill \\textit{Location}
+\\begin{itemize}
+  \\item Engineered X using Y, achieving Z metric improvement
+\\end{itemize}
+
+### SKILLS FORMAT (use tabularx for clean alignment):
+\\begin{tabularx}{\\textwidth}{@{}l X@{}}
+\\textbf{Languages:} & Python, Java, C++, JavaScript, TypeScript, SQL, Go \\\\
+\\textbf{Frameworks:} & FastAPI, Spring Boot, React, Node.js, Django, Flask \\\\
+\\textbf{Databases:} & PostgreSQL, MongoDB, Redis, DynamoDB, Elasticsearch \\\\
+\\textbf{Cloud/DevOps:} & AWS, GCP, Docker, Kubernetes, Terraform, CI/CD, GitHub Actions \\\\
+\\textbf{Tools:} & Git, Kafka, RabbitMQ, Prometheus, Grafana, Datadog, Sentry \\\\
+\\end{tabularx}
+
+### ALIGNMENT RULES:
+- Job title and date MUST be on the same line using \\hfill
+- Company and location MUST be on the same line using \\hfill
+- All sections MUST use consistent spacing
+- No orphan lines or widows — everything fits on ONE page
+- Use \\vspace{-Xpt} aggressively to remove excess whitespace
+- Skills section must use tabularx for clean column alignment
+- Contact info must be centered, single line, pipe-separated
+- Section headings must use \\titlerule for professional horizontal lines`;
 
     const userPrompt = `Here is the candidate's current resume:
 ${resumeText}
