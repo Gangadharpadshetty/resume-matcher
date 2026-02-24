@@ -65,7 +65,8 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'optimized-resume.tex';
+    const today = new Date().toISOString().split('T')[0];
+    a.download = `Gangadhar_Resume_Technology_${today}.tex`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -97,7 +98,8 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'optimized-resume.pdf';
+      const today = new Date().toISOString().split('T')[0];
+      a.download = `Gangadhar_Resume_Technology_${today}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
