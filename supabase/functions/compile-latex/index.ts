@@ -70,8 +70,20 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("LaTeX compilation error:", response.status, errText);
-      throw new Error("LaTeX compilation failed. Please check your LaTeX code for errors.");
+      let errorDetail = "Unknown compilation error";
+      try {
+        const errJson = JSON.parse(errText);
+        const log = errJson?.log_files?.["__main_document__.log"] || "";
+        const errorLines = log.split("\n").filter((l: string) => l.startsWith("!") || l.includes("Emergency stop"));
+        if (errorLines.length > 0) {
+          errorDetail = errorLines.slice(0, 5).join("; ");
+        }
+        console.error("LaTeX errors:", errorDetail);
+        console.error("LaTeX code (first 800 chars):", latexCode.substring(0, 800));
+      } catch (_) {
+        console.error("Raw error:", errText.substring(0, 500));
+      }
+      throw new Error(`LaTeX compilation failed: ${errorDetail}`);
     }
 
     const pdfBuffer = await response.arrayBuffer();
