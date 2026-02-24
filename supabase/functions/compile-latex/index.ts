@@ -20,6 +20,39 @@ serve(async (req) => {
     latexCode = latexCode.replace(/\\usepackage\{titlespacing\}\n?/g, "");
     latexCode = latexCode.replace(/\\set(main|sans|mono)font\{[^}]*\}\n?/g, "");
 
+    // Fix missing \begin{document}
+    if (!latexCode.includes("\\begin{document}")) {
+      latexCode = latexCode.replace(/(\\begin\{center\})/, "\\begin{document}\n$1");
+    }
+
+    // Fix \resumeItem with 2 args: \resumeItem{text1}{text2} -> \resumeItem{text1 -- text2}
+    latexCode = latexCode.replace(/\\resumeItem\{([^}]*)\}\{([^}]*)\}/g, "\\resumeItem{$1 -- $2}");
+
+    // Fix \resumeSubheading with only 2 args (missing 3rd and 4th)
+    // Pattern: \resumeSubheading{A}{B}\n followed by \resumeItem (no 3rd/4th brace group)
+    latexCode = latexCode.replace(
+      /\\resumeSubheading\{([^}]*)\}\{([^}]*)\}\s*\n(\s*\\resumeItem)/g,
+      "\\resumeSubheading{$1}{$2}{}{}\n$3"
+    );
+
+    // Fix bare \resumeItemListStart not inside \resumeSubHeadingListStart
+    // Replace with plain \begin{itemize} if it appears right after \section
+    latexCode = latexCode.replace(
+      /\\section\{([^}]*)\}\s*\n\\resumeItemListStart/g,
+      "\\section{$1}\n\\begin{itemize}[leftmargin=0.15in, label={}]"
+    );
+    // And matching end
+    let sectionFixCount = 0;
+    latexCode = latexCode.replace(
+      /\\section\{([^}]*)\}\s*\n\\begin\{itemize\}\[leftmargin=0\.15in, label=\{\}\]/g,
+      (match) => { sectionFixCount++; return match; }
+    );
+
+    // Ensure \end{document} exists
+    if (!latexCode.includes("\\end{document}")) {
+      latexCode += "\n\\end{document}";
+    }
+
     // Use YtoTech LaTeX API to compile to PDF
     const response = await fetch("https://latex.ytotech.com/builds/sync", {
       method: "POST",
