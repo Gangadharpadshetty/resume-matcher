@@ -4,6 +4,7 @@ import { ResumeUpload } from '@/components/ResumeUpload';
 import { ScoreRing } from '@/components/ScoreRing';
 import { KeywordAnalysis } from '@/components/KeywordAnalysis';
 import { LatexGenerator } from '@/components/LatexGenerator';
+import { RLDashboard } from '@/components/RLDashboard';
 import { analyzeResume, type ATSResult } from '@/lib/atsParser';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -273,12 +274,13 @@ const Index = () => {
 
         {/* AI LaTeX Generator - full width, shown after analysis */}
         {atsResult && (
-          <div className="mt-6">
+          <div className="mt-6 space-y-6">
             <LatexGenerator
               resumeText={resumeText}
               jobDescription={jobDescription}
               atsResult={atsResult}
             />
+            <RLDashboard />
           </div>
         )}
       </div>

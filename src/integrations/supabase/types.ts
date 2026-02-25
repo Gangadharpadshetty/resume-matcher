@@ -62,6 +62,145 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_strategies: {
+        Row: {
+          avg_reward: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          strategy_config: Json
+          times_selected: number
+          total_rewards: number
+          ucb_score: number
+          updated_at: string
+        }
+        Insert: {
+          avg_reward?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          strategy_config?: Json
+          times_selected?: number
+          total_rewards?: number
+          ucb_score?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_reward?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          strategy_config?: Json
+          times_selected?: number
+          total_rewards?: number
+          ucb_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resume_feedback: {
+        Row: {
+          bullet_quality_score: number
+          compilation_success: boolean
+          created_at: string
+          format_compliance_score: number
+          generation_time_ms: number | null
+          id: string
+          keyword_coverage_score: number
+          latex_line_count: number
+          matched_keywords: number
+          session_id: string
+          strategy_id: string | null
+          total_keywords: number
+          total_reward: number
+          user_rating: number | null
+        }
+        Insert: {
+          bullet_quality_score?: number
+          compilation_success?: boolean
+          created_at?: string
+          format_compliance_score?: number
+          generation_time_ms?: number | null
+          id?: string
+          keyword_coverage_score?: number
+          latex_line_count?: number
+          matched_keywords?: number
+          session_id: string
+          strategy_id?: string | null
+          total_keywords?: number
+          total_reward?: number
+          user_rating?: number | null
+        }
+        Update: {
+          bullet_quality_score?: number
+          compilation_success?: boolean
+          created_at?: string
+          format_compliance_score?: number
+          generation_time_ms?: number | null
+          id?: string
+          keyword_coverage_score?: number
+          latex_line_count?: number
+          matched_keywords?: number
+          session_id?: string
+          strategy_id?: string | null
+          total_keywords?: number
+          total_reward?: number
+          user_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_feedback_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rl_optimization_log: {
+        Row: {
+          avg_reward: number
+          best_strategy_id: string | null
+          epoch: number
+          exploration_rate: number
+          id: string
+          logged_at: string
+          total_generations: number
+        }
+        Insert: {
+          avg_reward?: number
+          best_strategy_id?: string | null
+          epoch: number
+          exploration_rate?: number
+          id?: string
+          logged_at?: string
+          total_generations?: number
+        }
+        Update: {
+          avg_reward?: number
+          best_strategy_id?: string | null
+          epoch?: number
+          exploration_rate?: number
+          id?: string
+          logged_at?: string
+          total_generations?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rl_optimization_log_best_strategy_id_fkey"
+            columns: ["best_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_jobs: {
         Row: {
           id: string

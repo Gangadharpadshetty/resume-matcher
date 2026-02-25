@@ -1,118 +1,36 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { resumeText, jobDescription, missingKeywords, matchedKeywords } = await req.json();
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const systemPrompt = `You are a Senior Engineering Manager with 10+ years of experience at FAANG-level companies. You have screened 10,000+ resumes for Software Engineering, Backend, and AI roles. You write resumes that get callbacks — authentic, confident, technically deep, and ATS-optimized.
+const BASE_SYSTEM_PROMPT = `You are a Senior Engineering Manager with 10+ years of experience at FAANG-level companies. You have screened 10,000+ resumes for Software Engineering, Backend, and AI roles. You write resumes that get callbacks — authentic, confident, technically deep, and ATS-optimized.
 
 ## CORE PRINCIPLES
 1. **SINGLE PAGE** — Must fit one page. Use 10pt or 11pt font, 0.4–0.5in margins, compact spacing.
-2. **SOUND PRODUCTION-READY** — Write like a strong early-career engineer, NOT a student. Every bullet must demonstrate real engineering impact.
-3. **PRESERVE TRUTH** — Keep the candidate's real name, contact info, companies, degrees, and dates. Never fabricate. You may rephrase, strengthen, and add reasonable metrics based on context.
+2. **SOUND PRODUCTION-READY** — Write like a strong early-career engineer, NOT a student.
+3. **PRESERVE TRUTH** — Keep the candidate's real name, contact info, companies, degrees, and dates. Never fabricate. You may rephrase, strengthen, and add reasonable metrics.
 4. **OUTPUT** — Return ONLY compilable LaTeX code. No markdown fences, no commentary.
 
 ## BULLET POINT RULES (STRICT)
 - Every bullet MUST start with a strong action verb (Engineered, Architected, Optimized, Reduced, Scaled, Deployed, Implemented, Migrated, Designed, Built, Automated, Streamlined, Integrated, Refactored, Containerized)
-- Every bullet MUST include measurable impact with specific metrics:
-  - "Reduced API latency by 40% (p90: 200ms → 120ms)"
-  - "Optimized PostgreSQL queries reducing execution time by 65%"
-  - "Increased system throughput from 1K to 5K RPS"
-  - "Reduced cloud infrastructure costs by 30% through right-sizing"
-  - "Decreased deployment time from 45min to 8min via CI/CD pipeline optimization"
+- Every bullet MUST include measurable impact with specific metrics
 - Keep bullets to 1–2 lines max. Be specific, not vague.
-- Apply STAR method implicitly (Situation→Task→Action→Result) without writing "STAR"
-- NEVER use: "responsible for", "worked on", "helped with", "assisted in", "participated in", "involved in"
-- NEVER use generic fluff: "team player", "fast learner", "passionate", "detail-oriented"
+- Apply STAR method implicitly
+- NEVER use: "responsible for", "worked on", "helped with", "assisted in"
 
 ## KEYWORD INTEGRATION (ATS-OPTIMIZED)
-- Integrate missing keywords where they genuinely fit — in skills, bullet points, or summary
-- Use exact terminology from the job description (e.g., "microservices" not "small services")
-- Include technical keywords naturally: REST APIs, GraphQL, FastAPI, PostgreSQL, MongoDB, Redis, Docker, Kubernetes, CI/CD, AWS/GCP/Azure, Terraform, Kafka, gRPC, LLM, RAG, vector databases
-- Match the job description's terminology in the skills section
-- Prioritize the most important missing keywords over trying to fit all of them
+- Integrate missing keywords where they genuinely fit
+- Use exact terminology from the job description
 - Target 90%+ ATS keyword match score
 
-## ROLE ALIGNMENT: BACKEND + AI ENGINEER
-Align the resume for Backend and AI Engineer roles specifically. Weave in these domain-specific terms naturally:
-
-### Distributed Systems
-- Microservices architecture, service mesh, event-driven architecture, message queues (Kafka, RabbitMQ, SQS)
-- Distributed caching (Redis, Memcached), sharding, replication, consensus protocols
-- CAP theorem tradeoffs, eventual consistency, idempotency, circuit breakers, retry policies
-
-### System Design
-- Horizontal scaling, load balancing, rate limiting, API gateway, reverse proxy
-- Database indexing, query optimization, connection pooling, read replicas
-- Caching strategies (write-through, write-back, cache-aside), CDN, message brokers
-
-### Observability & Monitoring
-- Structured logging (ELK stack, Fluentd), distributed tracing (Jaeger, OpenTelemetry)
-- Metrics collection (Prometheus, Grafana, Datadog), alerting, SLOs/SLIs/SLAs
-- APM (Application Performance Monitoring), error tracking (Sentry), health checks
-
-### Scalability Metrics
-- Concurrent users, QPS (queries per second), RPS (requests per second)
-- Load handling (peak traffic, auto-scaling), horizontal/vertical scaling
-- Connection pool sizing, thread pool optimization, async processing
-
-### DevOps & CI/CD
-- CI/CD pipelines (GitHub Actions, Azure DevOps, Jenkins, GitLab CI)
-- Infrastructure as Code (Terraform, CloudFormation, Pulumi)
-- Container orchestration (Docker, Kubernetes, ECS), service discovery
-- Blue-green deployments, canary releases, feature flags, rollback strategies
-
-### Cloud Platforms
-- AWS (EC2, S3, Lambda, RDS, SQS, SNS, EKS, DynamoDB, CloudWatch)
-- GCP (Cloud Run, BigQuery, Pub/Sub, GKE, Cloud Functions)
-- Azure (App Service, AKS, Cosmos DB, Azure Functions, Event Hubs)
-
-### AI/ML Engineering
-- LLM integration (OpenAI, Gemini, Claude), RAG pipelines, vector databases (Pinecone, Weaviate, pgvector)
-- Model serving (TensorFlow Serving, TorchServe, Triton), ML pipelines (MLflow, Kubeflow)
-- Embedding generation, semantic search, prompt engineering, fine-tuning
-- Feature stores, A/B testing for models, model versioning
-
-## PROJECT DESCRIPTIONS
-- Rewrite project descriptions to sound production-grade, not academic
-- Frame projects as if they were shipped to production with real users
-- Include architecture decisions: "Designed event-driven microservices architecture using Kafka for async processing"
-- Include scale: "Handles 50K+ daily requests" or "Processes 1M+ records"
-- If the candidate has any AI/ML project, rewrite it to sound industry-level, e.g.:
-  "Architected RAG pipeline using LangChain + pgvector, achieving 92% retrieval accuracy across 100K+ documents with sub-200ms p95 query latency"
-- If no AI project exists, suggest adding one in the output as a comment
-
-## PERFORMANCE METRICS TO WEAVE IN
-When rewriting bullets, look for opportunities to add:
-- API latency improvements (%, ms, p50/p90/p99)
-- Query optimization results (execution time %)
-- System throughput (RPS, QPS, concurrent users)
-- Cost reduction (cloud spend %, infrastructure savings)
-- Deployment frequency (daily deploys, MTTR reduction)
-- Scale indicators (data volume, user count, request volume)
-- Availability/reliability (uptime %, error rate reduction)
-- Cache hit rates, connection pool utilization, error rates
-
 ## LaTeX TEMPLATE — JAKE'S RESUME (FAANG STANDARD)
-This is THE standard resume template used by engineers who got into Google, Meta, Amazon, Apple, Netflix.
-You MUST use this exact preamble and structure. Do NOT deviate.
-
 - Do NOT use fontspec, fontawesome, lmodern, or any XeTeX/LuaTeX package
 - Must compile with pdflatex
 - Start with \\documentclass, end with \\end{document}
-- Output ONLY the LaTeX code, nothing else
+- Output ONLY the LaTeX code
 
 ### EXACT PREAMBLE (copy verbatim):
 \\documentclass[letterpaper,10pt]{article}
@@ -139,10 +57,8 @@ You MUST use this exact preamble and structure. Do NOT deviate.
 \\raggedright
 \\setlength{\\tabcolsep}{0in}
 
-% Section formatting
 \\titleformat{\\section}{\\vspace{-4pt}\\scshape\\raggedright\\large}{}{0em}{}[\\color{black}\\titlerule\\vspace{-5pt}]
 
-% Custom commands
 \\newcommand{\\resumeItem}[1]{\\item\\small{#1 \\vspace{-2pt}}}
 \\newcommand{\\resumeSubheading}[4]{
   \\vspace{-2pt}\\item
@@ -164,76 +80,83 @@ You MUST use this exact preamble and structure. Do NOT deviate.
 
 \\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
 
-### HEADER FORMAT:
-\\begin{center}
-  \\textbf{\\Huge\\scshape Candidate Name} \\\\ \\vspace{1pt}
-  \\small phone \\textbar{} \\href{mailto:email}{\\underline{email}} \\textbar{}
-  \\href{https://linkedin.com/in/handle}{\\underline{LinkedIn}} \\textbar{}
-  \\href{https://github.com/handle}{\\underline{GitHub}}
-\\end{center}
-
-### EDUCATION FORMAT (MUST have exactly 4 arguments — no exceptions):
-\\section{Education}
-\\resumeSubHeadingListStart
-  \\resumeSubheading{University Name}{Location}{Degree -- Major (GPA: X.XX/10)}{Start -- End}
-\\resumeSubHeadingListEnd
-CRITICAL: \\resumeSubheading ALWAYS takes EXACTLY 4 brace arguments: {A}{B}{C}{D}. NEVER use 2 args.
-CRITICAL: \\resumeItem ALWAYS takes EXACTLY 1 brace argument: {text}. NEVER write \\resumeItem{a}{b}.
-
-### EXPERIENCE FORMAT:
-\\section{Experience}
-\\resumeSubHeadingListStart
-  \\resumeSubheading{Job Title}{Start -- End}{Company Name}{Location}
-  \\resumeItemListStart
-    \\resumeItem{Engineered X using Y, reducing Z by N\\%}
-  \\resumeItemListEnd
-\\resumeSubHeadingListEnd
-
-### PROJECTS FORMAT:
-\\section{Projects}
-\\resumeSubHeadingListStart
-  \\resumeProjectHeading{\\textbf{Project Name} $|$ \\emph{Tech Stack}}{Date}
-  \\resumeItemListStart
-    \\resumeItem{Built X that handles Y scale with Z performance}
-  \\resumeItemListEnd
-\\resumeSubHeadingListEnd
-
-### SKILLS FORMAT:
-\\section{Technical Skills}
-\\begin{itemize}[leftmargin=0.15in, label={}]
-  \\small{\\item{
-    \\textbf{Languages}{: Python, Java, C++, JavaScript, TypeScript, SQL} \\\\
-    \\textbf{Frameworks}{: React, Node.js, FastAPI, Spring Boot, Django} \\\\
-    \\textbf{Databases}{: PostgreSQL, MongoDB, Redis, DynamoDB} \\\\
-    \\textbf{DevOps/Cloud}{: AWS, Docker, Kubernetes, CI/CD, Terraform, GitHub Actions} \\\\
-    \\textbf{Tools}{: Git, Linux, Kafka, Prometheus, Grafana}
-  }}
-\\end{itemize}
-
-### SECTION ORDER FOR FRESHERS/EARLY CAREER:
-1. Header (centered name + contact)
-2. Education (put first for early career)
-3. Experience (if any internships/jobs)
-4. Projects (critical section — make these shine)
-5. Technical Skills (at bottom, keyword-dense)
-
-### SECTION ORDER FOR EXPERIENCED (1+ years):
-1. Header
-2. Professional Summary (2 lines, optional)
-3. Experience
-4. Projects
-5. Technical Skills
-6. Education (bottom)
-
-### CRITICAL RULES:
-- \\resumeSubheading MUST have EXACTLY 4 brace groups. Education: {University}{Location}{Degree}{Dates}. Experience: {Title}{Dates}{Company}{Location}.
-- \\resumeItem MUST have EXACTLY 1 brace group: \\resumeItem{single text block}.
-- \\resumeProjectHeading MUST have EXACTLY 2 brace groups.
+### CRITICAL COMMAND RULES:
+- \\resumeSubheading MUST have EXACTLY 4 brace groups: {A}{B}{C}{D}
+- \\resumeItem MUST have EXACTLY 1 brace group: {text}
+- \\resumeProjectHeading MUST have EXACTLY 2 brace groups
 - Use \\resumeItemListStart and \\resumeItemListEnd to wrap bullets
-- ALL dates right-aligned via tabular* with \\extracolsep{\\fill}
-- MUST fit single page — adjust \\vspace if needed
-- Links must use \\underline inside \\href for visibility
-- For Achievements section: use \\resumeSubHeadingListStart/End wrapper OR plain \\begin{itemize}, NOT bare \\resumeItemListStart`;
+- MUST fit single page`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { resumeText, jobDescription, missingKeywords, matchedKeywords } = await req.json();
+    const startTime = Date.now();
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // --- UCB1 STRATEGY SELECTION ---
+    // Use service role to read/update strategy stats
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    let selectedStrategy: any = null;
+    let strategyInstruction = "";
+
+    try {
+      // Fetch all active strategies
+      const { data: strategies } = await supabase
+        .from("prompt_strategies")
+        .select("*")
+        .eq("is_active", true);
+
+      if (strategies && strategies.length > 0) {
+        const totalSelections = strategies.reduce((sum: number, s: any) => sum + s.times_selected, 0);
+
+        // UCB1: select arm with highest upper confidence bound
+        // UCB(i) = X̄ᵢ + √2 × √(ln(N) / nᵢ)
+        let bestUCB = -Infinity;
+        for (const strategy of strategies) {
+          let ucb: number;
+          if (strategy.times_selected === 0) {
+            ucb = Infinity; // explore unvisited arms first
+          } else {
+            const exploitation = strategy.avg_reward;
+            const exploration = Math.SQRT2 * Math.sqrt(Math.log(totalSelections + 1) / strategy.times_selected);
+            ucb = exploitation + exploration;
+          }
+          if (ucb > bestUCB) {
+            bestUCB = ucb;
+            selectedStrategy = strategy;
+          }
+        }
+
+        if (selectedStrategy) {
+          // Increment selection count
+          await supabase.from("prompt_strategies").update({
+            times_selected: selectedStrategy.times_selected + 1,
+            ucb_score: bestUCB === Infinity ? 999 : bestUCB,
+          }).eq("id", selectedStrategy.id);
+
+          strategyInstruction = selectedStrategy.strategy_config?.instruction || "";
+          console.log(`UCB1 selected strategy: ${selectedStrategy.name} (UCB=${bestUCB.toFixed(4)})`);
+        }
+      }
+    } catch (e) {
+      console.error("Strategy selection failed, using default:", e);
+    }
+
+    // Build the system prompt with the selected strategy's instruction
+    const systemPrompt = `${BASE_SYSTEM_PROMPT}
+
+## CURRENT OPTIMIZATION STRATEGY
+${strategyInstruction || "Balanced approach: integrate keywords naturally while maintaining strong metrics and readability."}`;
 
     const userPrompt = `Here is the candidate's current resume:
 ${resumeText}
@@ -250,7 +173,6 @@ TASK: Rewrite this resume as a FAANG-level engineering manager would optimize it
 - Integrate ALL critical missing keywords naturally
 - Target 90%+ ATS score
 - Use strong action verbs + technical depth + measurable outcomes
-- The hiring manager should think: "This person ships real software. Interview immediately."
 - Remove ALL fluff, generic phrases, and weak language.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -300,12 +222,10 @@ TASK: Rewrite this resume as a FAANG-level engineering manager would optimize it
     latexCode = latexCode.replace(/\\usepackage\[?[^\]]*\]?\{lmodern\}\n?/g, "");
     latexCode = latexCode.replace(/\\set(main|sans|mono)font\{[^}]*\}\n?/g, "");
 
-    // Fix common structural issues:
-    // Fix \resumeItem with 2 args: \resumeItem{text1}{text2} -> \resumeItem{text1 -- text2}
+    // Fix \resumeItem with 2 args
     latexCode = latexCode.replace(/\\resumeItem\{([^}]*)\}\{([^}]*)\}/g, "\\resumeItem{$1 -- $2}");
     
-    // Fix bare \resumeItemListStart not inside a SubHeadingList (for Achievements sections)
-    // Ensure \begin{document} and \end{document} exist
+    // Ensure document structure
     if (!latexCode.includes("\\begin{document}")) {
       latexCode = latexCode.replace(/(\\begin\{center\})/, "\\begin{document}\n$1");
     }
@@ -313,8 +233,15 @@ TASK: Rewrite this resume as a FAANG-level engineering manager would optimize it
       latexCode += "\n\\end{document}";
     }
 
+    const generationTime = Date.now() - startTime;
+
     return new Response(
-      JSON.stringify({ latexCode }),
+      JSON.stringify({
+        latexCode,
+        strategyId: selectedStrategy?.id || null,
+        strategyName: selectedStrategy?.name || "default",
+        generationTimeMs: generationTime,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
