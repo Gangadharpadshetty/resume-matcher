@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.fetch-job-description]
 verify_jwt = false
+
+[functions.reward-model]
+verify_jwt = false
