@@ -26,65 +26,26 @@ const BASE_SYSTEM_PROMPT = `You are a Senior Engineering Manager with 10+ years 
 - Use exact terminology from the job description
 - Target 90%+ ATS keyword match score
 
-## LaTeX TEMPLATE — JAKE'S RESUME (FAANG STANDARD)
+## LaTeX OUTPUT RULES (CRITICAL)
+- Output ONLY the content between \\begin{document} and \\end{document}
+- Do NOT include \\documentclass, \\usepackage, or any preamble — it is provided automatically
+- Do NOT redefine \\resumeItem, \\resumeSubheading, \\resumeProjectHeading, or any template commands — they are already defined
 - Do NOT use fontspec, fontawesome, lmodern, or any XeTeX/LuaTeX package
-- Must compile with pdflatex
-- Start with \\documentclass, end with \\end{document}
-- Output ONLY the LaTeX code
+- Do NOT wrap output in markdown code fences
 
-### EXACT PREAMBLE (copy verbatim):
-\\documentclass[letterpaper,10pt]{article}
+### AVAILABLE COMMANDS (already defined — just use them):
+- \\resumeSubheading{Title}{Date/Location}{Subtitle}{Date2} — EXACTLY 4 brace groups
+- \\resumeItem{text} — EXACTLY 1 brace group
+- \\resumeProjectHeading{Title}{Date} — EXACTLY 2 brace groups
+- \\resumeSubHeadingListStart / \\resumeSubHeadingListEnd — wrap subheading groups
+- \\resumeItemListStart / \\resumeItemListEnd — wrap bullet lists
+- \\section{Section Title} — for section headers
 
-\\usepackage{latexsym}
-\\usepackage[empty]{fullpage}
-\\usepackage{titlesec}
-\\usepackage[usenames,dvipsnames]{color}
-\\usepackage{enumitem}
-\\usepackage[hidelinks]{hyperref}
-\\usepackage[english]{babel}
-\\usepackage[T1]{fontenc}
-\\usepackage[utf8]{inputenc}
-\\usepackage{tabularx}
+### OUTPUT FORMAT:
+\\begin{document}
+  ... your resume content here using the commands above ...
+\\end{document}
 
-\\addtolength{\\oddsidemargin}{-0.5in}
-\\addtolength{\\evensidemargin}{-0.5in}
-\\addtolength{\\textwidth}{1in}
-\\addtolength{\\topmargin}{-0.5in}
-\\addtolength{\\textheight}{1.0in}
-
-\\urlstyle{same}
-\\raggedbottom
-\\raggedright
-\\setlength{\\tabcolsep}{0in}
-
-\\titleformat{\\section}{\\vspace{-4pt}\\scshape\\raggedright\\large}{}{0em}{}[\\color{black}\\titlerule\\vspace{-5pt}]
-
-\\newcommand{\\resumeItem}[1]{\\item\\small{#1 \\vspace{-2pt}}}
-\\newcommand{\\resumeSubheading}[4]{
-  \\vspace{-2pt}\\item
-    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
-      \\textbf{#1} & #2 \\\\
-      \\textit{\\small#3} & \\textit{\\small #4} \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-\\newcommand{\\resumeProjectHeading}[2]{
-    \\item
-    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
-      \\small#1 & #2 \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
-\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
-\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
-\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
-
-\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
-
-### CRITICAL COMMAND RULES:
-- \\resumeSubheading MUST have EXACTLY 4 brace groups: {A}{B}{C}{D}
-- \\resumeItem MUST have EXACTLY 1 brace group: {text}
-- \\resumeProjectHeading MUST have EXACTLY 2 brace groups
-- Use \\resumeItemListStart and \\resumeItemListEnd to wrap bullets
 - MUST fit single page`;
 
 serve(async (req) => {
