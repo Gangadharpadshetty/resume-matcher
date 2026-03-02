@@ -44,34 +44,16 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     setRewardScores(null);
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      const { data, error } = await supabase.functions.invoke('generate-resume', {
+        body: {
+          resumeText,
+          jobDescription,
+          missingKeywords: atsResult.missingKeywords.slice(0, 30),
+          matchedKeywords: atsResult.matchedKeywords.slice(0, 20),
+        },
+      });
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-resume`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            resumeText,
-            jobDescription,
-            missingKeywords: atsResult.missingKeywords.slice(0, 30),
-            matchedKeywords: atsResult.matchedKeywords.slice(0, 20),
-          }),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeout);
-
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ error: 'Generation failed' }));
-        throw new Error(errBody.error || `Generation failed (${res.status})`);
-      }
-
-      const data = await res.json();
+      if (error) throw error;
       if (data?.error) {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
         return;
@@ -107,15 +89,9 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
         // Non-critical: reward computation failed
       }
     } catch (err: any) {
-      const isAbort = err?.name === 'AbortError';
-      const isNetwork = err?.message?.includes('Failed to fetch');
       toast({
         title: 'Generation failed',
-        description: isAbort
-          ? 'Request timed out. Please try again.'
-          : isNetwork
-            ? 'Network error — please check your connection and try again.'
-            : err?.message || 'Something went wrong. Please try again.',
+        description: err?.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -140,24 +116,24 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
   const downloadPDF = async () => {
     setIsCompiling(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compile-latex`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ latexCode }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('compile-latex', {
+        body: { latexCode },
+      });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Compilation failed' }));
-        throw new Error(err.error || 'PDF compilation failed');
+      if (error) throw error;
+
+      // If data is already a Blob (PDF), use it directly
+      let blob: Blob;
+      if (data instanceof Blob) {
+        blob = data;
+      } else if (data instanceof ArrayBuffer) {
+        blob = new Blob([data], { type: 'application/pdf' });
+      } else {
+        // Data might be JSON error
+        if (data?.error) throw new Error(data.error);
+        throw new Error('Unexpected response format from compiler');
       }
 
-      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
