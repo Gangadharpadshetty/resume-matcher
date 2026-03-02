@@ -107,9 +107,15 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
         // Non-critical: reward computation failed
       }
     } catch (err: any) {
+      const isAbort = err?.name === 'AbortError';
+      const isNetwork = err?.message?.includes('Failed to fetch');
       toast({
         title: 'Generation failed',
-        description: err?.message || 'Something went wrong. Please try again.',
+        description: isAbort
+          ? 'Request timed out. Please try again.'
+          : isNetwork
+            ? 'Network error — please check your connection and try again.'
+            : err?.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
