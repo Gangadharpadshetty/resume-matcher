@@ -44,16 +44,34 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     setRewardScores(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-resume', {
-        body: {
-          resumeText,
-          jobDescription,
-          missingKeywords: atsResult.missingKeywords,
-          matchedKeywords: atsResult.matchedKeywords,
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
 
-      if (error) throw error;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-resume`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            resumeText,
+            jobDescription,
+            missingKeywords: atsResult.missingKeywords.slice(0, 30),
+            matchedKeywords: atsResult.matchedKeywords.slice(0, 20),
+          }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Generation failed' }));
+        throw new Error(errBody.error || `Generation failed (${res.status})`);
+      }
+
+      const data = await res.json();
       if (data?.error) {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
         return;
