@@ -62,6 +62,60 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          ats_score: number | null
+          created_at: string
+          id: string
+          job_description: string | null
+          job_url: string | null
+          latex_code: string | null
+          matched_keywords: string[] | null
+          missing_keywords: string[] | null
+          name: string
+          resume_file_name: string | null
+          resume_text: string | null
+          reward_scores: Json | null
+          session_id: string
+          strategy_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          ats_score?: number | null
+          created_at?: string
+          id?: string
+          job_description?: string | null
+          job_url?: string | null
+          latex_code?: string | null
+          matched_keywords?: string[] | null
+          missing_keywords?: string[] | null
+          name?: string
+          resume_file_name?: string | null
+          resume_text?: string | null
+          reward_scores?: Json | null
+          session_id: string
+          strategy_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ats_score?: number | null
+          created_at?: string
+          id?: string
+          job_description?: string | null
+          job_url?: string | null
+          latex_code?: string | null
+          matched_keywords?: string[] | null
+          missing_keywords?: string[] | null
+          name?: string
+          resume_file_name?: string | null
+          resume_text?: string | null
+          reward_scores?: Json | null
+          session_id?: string
+          strategy_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prompt_strategies: {
         Row: {
           avg_reward: number
