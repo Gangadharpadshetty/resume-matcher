@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { Zap, FileText, Briefcase, BarChart3, Github, Sparkles, Link, Loader2 } from 'lucide-react';
+import { Zap, FileText, Briefcase, BarChart3, Github, Sparkles, Link, Loader2, Save } from 'lucide-react';
 import { ResumeUpload } from '@/components/ResumeUpload';
 import { ScoreRing } from '@/components/ScoreRing';
 import { KeywordAnalysis } from '@/components/KeywordAnalysis';
 import { LatexGenerator } from '@/components/LatexGenerator';
 import { RLDashboard } from '@/components/RLDashboard';
+import { ProjectSidebar } from '@/components/ProjectSidebar';
+import { useProjects } from '@/hooks/useProjects';
 import { analyzeResume, type ATSResult } from '@/lib/atsParser';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,6 +19,13 @@ const Index = () => {
   const [isFetchingJob, setIsFetchingJob] = useState(false);
   const [atsResult, setAtsResult] = useState<ATSResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const {
+    projects, loading: projectsLoading, currentProjectId,
+    saveProject, loadProject, deleteProject, newProject,
+  } = useProjects();
 
   const handleResumeChange = useCallback((text: string, fileName?: string) => {
     setResumeText(text);
@@ -39,7 +48,54 @@ const Index = () => {
     }, 600);
   };
 
+  const handleSaveProject = async () => {
+    setIsSaving(true);
+    const name = projectName.trim() || `Project ${new Date().toLocaleDateString()}`;
+    await saveProject({
+      name,
+      resume_text: resumeText || null,
+      resume_file_name: resumeFileName || null,
+      job_description: jobDescription || null,
+      job_url: jobUrl || null,
+      ats_score: atsResult?.score ?? null,
+      matched_keywords: atsResult?.matchedKeywords ?? [],
+      missing_keywords: atsResult?.missingKeywords ?? [],
+    });
+    setIsSaving(false);
+  };
+
+  const handleLoadProject = (project: ReturnType<typeof loadProject> extends infer T ? T : never) => {
+    const p = loadProject(project as any);
+    if (p.resume_text) { setResumeText(p.resume_text); localStorage.setItem('resumeText', p.resume_text); }
+    if (p.resume_file_name) { setResumeFileName(p.resume_file_name); localStorage.setItem('resumeFileName', p.resume_file_name); }
+    if (p.job_description) setJobDescription(p.job_description);
+    if (p.job_url) setJobUrl(p.job_url);
+    setProjectName(p.name);
+    setAtsResult(null);
+    // Re-analyze if we have both inputs
+    if (p.resume_text && p.job_description) {
+      setTimeout(() => {
+        const result = analyzeResume(p.resume_text!, p.job_description!);
+        setAtsResult(result);
+      }, 100);
+    }
+    toast.success(`Loaded: ${p.name}`);
+  };
+
+  const handleNewProject = () => {
+    newProject();
+    setResumeText('');
+    setResumeFileName(undefined);
+    setJobDescription('');
+    setJobUrl('');
+    setProjectName('');
+    setAtsResult(null);
+    localStorage.removeItem('resumeText');
+    localStorage.removeItem('resumeFileName');
+  };
+
   const canAnalyze = resumeText.trim().length > 50 && jobDescription.trim().length > 50;
+  const canSave = resumeText.trim().length > 10 || jobDescription.trim().length > 10;
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,6 +153,18 @@ const Index = () => {
             Upload your resume, paste the job description, and get your ATS match score instantly.
             Then let AI rewrite your resume in LaTeX with all missing keywords included.
           </p>
+        </div>
+
+        {/* Saved Projects */}
+        <div className="mb-6">
+          <ProjectSidebar
+            projects={projects}
+            loading={projectsLoading}
+            currentProjectId={currentProjectId}
+            onLoad={handleLoadProject}
+            onDelete={deleteProject}
+            onNew={handleNewProject}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -192,13 +260,35 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Save & Analyze buttons */}
+            <div className="flex gap-3 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              {/* Project name + save */}
+              <div className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={e => setProjectName(e.target.value)}
+                  placeholder="Project name (e.g. Google SDE)"
+                  className="flex-1 px-4 py-3 bg-muted border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                />
+                <button
+                  onClick={handleSaveProject}
+                  disabled={!canSave || isSaving}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold bg-secondary text-secondary-foreground hover:bg-muted border border-border transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save
+                </button>
+              </div>
+            </div>
+
             {/* Analyze Button */}
             <button
               onClick={handleAnalyze}
               disabled={!canAnalyze || isAnalyzing}
               className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed animate-fade-up"
               style={{
-                animationDelay: '0.1s',
+                animationDelay: '0.15s',
                 background: canAnalyze && !isAnalyzing
                   ? 'linear-gradient(135deg, hsl(158 64% 48%), hsl(158 64% 38%))'
                   : 'hsl(222 20% 16%)',
