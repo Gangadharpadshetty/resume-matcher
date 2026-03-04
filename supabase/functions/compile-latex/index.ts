@@ -106,6 +106,9 @@ function sanitizeBody(body: string): string {
   body = body.replace(/\\begin\{document\}/g, "");
   body = body.replace(/\\end\{document\}/g, "");
 
+  // Escape bare & characters (not already escaped as \&)
+  body = body.replace(/(?<!\\)&/g, "\\&");
+
   return body.trim();
 }
 
