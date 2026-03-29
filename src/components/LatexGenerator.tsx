@@ -18,6 +18,15 @@ interface RewardScores {
   totalReward: number;
 }
 
+// Sanitize company name for use in filenames
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+    .replace(/\s+/g, '_')
+    .trim()
+    .slice(0, 40);
+}
+
 export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
   resumeText,
   jobDescription,
@@ -31,6 +40,16 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
   const [rewardScores, setRewardScores] = useState<RewardScores | null>(null);
   const [strategyName, setStrategyName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Build filename from company name
+  const companyName = atsResult.companyName;
+  const getFileName = (ext: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    if (companyName) {
+      return `Resume_${sanitizeFileName(companyName)}_${today}.${ext}`;
+    }
+    return `Resume_Optimized_${today}.${ext}`;
+  };
 
   const generateLatex = async () => {
     if (!resumeText.trim() || !jobDescription.trim()) {
@@ -104,13 +123,12 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const today = new Date().toISOString().split('T')[0];
-    a.download = `Gangadhar_Resume_Technology_${today}.tex`;
+    a.download = getFileName('tex');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: 'Downloaded!', description: 'optimized-resume.tex saved to your device.' });
+    toast({ title: 'Downloaded!', description: `${getFileName('tex')} saved to your device.` });
   };
 
   const downloadPDF = async () => {
@@ -122,14 +140,12 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
 
       if (error) throw error;
 
-      // If data is already a Blob (PDF), use it directly
       let blob: Blob;
       if (data instanceof Blob) {
         blob = data;
       } else if (data instanceof ArrayBuffer) {
         blob = new Blob([data], { type: 'application/pdf' });
       } else {
-        // Data might be JSON error
         if (data?.error) throw new Error(data.error);
         throw new Error('Unexpected response format from compiler');
       }
@@ -137,13 +153,12 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const today = new Date().toISOString().split('T')[0];
-      a.download = `Gangadhar_Resume_Technology_${today}.pdf`;
+      a.download = getFileName('pdf');
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: 'PDF Downloaded!', description: 'Your optimized resume PDF has been saved.' });
+      toast({ title: 'PDF Downloaded!', description: `${getFileName('pdf')} has been saved.` });
     } catch (err: any) {
       toast({
         title: 'PDF compilation failed',
@@ -173,7 +188,10 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
             </div>
             <div>
               <h3 className="font-semibold font-display text-foreground">AI Resume Optimizer</h3>
-              <p className="text-xs text-muted-foreground">RL-powered • UCB1 strategy selection • Self-improving</p>
+              <p className="text-xs text-muted-foreground">
+                RL-powered • UCB1 strategy • STAR method
+                {companyName && <> • Targeting <span className="text-primary font-medium">{companyName}</span></>}
+              </p>
             </div>
           </div>
           {latexCode && (
@@ -219,7 +237,7 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating with RL-optimized strategy...
+                  Generating with STAR method + RL strategy...
                 </>
               ) : (
                 <>
@@ -280,7 +298,7 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
             <div className="rounded-xl border border-border overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 bg-muted border-b border-border">
                 <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">optimized-resume.tex</span>
+                <span className="text-xs font-medium text-muted-foreground">{getFileName('tex')}</span>
                 <span className="ml-auto text-xs text-muted-foreground">{latexCode.split('\n').length} lines</span>
               </div>
               <pre className="px-4 py-4 text-xs text-foreground overflow-auto max-h-80 bg-muted/30 leading-relaxed font-mono">
