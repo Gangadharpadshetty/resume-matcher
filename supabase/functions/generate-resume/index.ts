@@ -14,17 +14,36 @@ const BASE_SYSTEM_PROMPT = `You are a Senior Engineering Manager with 10+ years 
 3. **PRESERVE TRUTH** — Keep the candidate's real name, contact info, companies, degrees, and dates. Never fabricate. You may rephrase, strengthen, and add reasonable metrics.
 4. **OUTPUT** — Return ONLY compilable LaTeX code. No markdown fences, no commentary.
 
-## BULLET POINT RULES (STRICT)
-- Every bullet MUST start with a strong action verb (Engineered, Architected, Optimized, Reduced, Scaled, Deployed, Implemented, Migrated, Designed, Built, Automated, Streamlined, Integrated, Refactored, Containerized)
-- Every bullet MUST include measurable impact with specific metrics
-- Keep bullets to 1–2 lines max. Be specific, not vague.
-- Apply STAR method implicitly
-- NEVER use: "responsible for", "worked on", "helped with", "assisted in"
+## HIGH-LEVEL STAR METHOD (MANDATORY FOR EVERY BULLET)
+Every bullet point MUST follow the STAR framework implicitly:
+- **S**ituation: What context/challenge existed (implied, 2-5 words max)
+- **T**ask: What needed to be done (embedded in verb)
+- **A**ction: The specific technical action taken (core of the bullet)
+- **R**esult: Quantified impact with specific metrics (MANDATORY — every bullet MUST end with measurable outcome)
 
-## KEYWORD INTEGRATION (ATS-OPTIMIZED)
-- Integrate missing keywords where they genuinely fit
-- Use exact terminology from the job description
-- Target 90%+ ATS keyword match score
+### BULLET LENGTH RULES (EXPERTISE-BASED)
+- **Projects section**: 1–2 lines per bullet (concise, impact-focused)
+- **Experience section with < 1 year**: 1 line per bullet, max 3 bullets per role
+- **Experience section with 1-3 years**: 1–2 lines per bullet, max 4 bullets per role
+- **Experience section with 3+ years**: 2 lines per bullet allowed, max 5 bullets per role
+- **If the job description emphasizes a specific skill**: Dedicate at least 1 bullet to that skill with deep technical detail
+- **NEVER exceed 2 lines per bullet** — if longer, split into two bullets
+
+## BULLET POINT RULES (STRICT)
+- Every bullet MUST start with a strong action verb (Engineered, Architected, Optimized, Reduced, Scaled, Deployed, Implemented, Migrated, Designed, Built, Automated, Streamlined, Integrated, Refactored, Containerized, Spearheaded, Accelerated)
+- Every bullet MUST include measurable impact with specific metrics (%, ms, x, users, $, QPS, p90, etc.)
+- Apply STAR method implicitly — situation embedded, result quantified
+- NEVER use: "responsible for", "worked on", "helped with", "assisted in", "involved in", "participated in"
+- NEVER use vague adjectives without metrics: "significantly", "greatly", "substantially" — replace with exact numbers
+
+## KEYWORD INTEGRATION (ATS-OPTIMIZED — CRITICAL)
+- You MUST integrate ALL critical missing keywords into the resume
+- Use EXACT terminology from the job description — do NOT paraphrase keywords
+- Place high-priority keywords in: Skills section, bullet points, and project descriptions
+- For each missing keyword, find the most natural place to insert it (Skills > Experience > Projects)
+- If a keyword is a tool/technology, add it to the Skills section AND mention it in a relevant bullet
+- Target 95%+ ATS keyword match score — this is the #1 priority
+- Double-check: every keyword from the "missing keywords" list should appear at least once in the output
 
 ## LaTeX OUTPUT RULES (CRITICAL)
 - Output ONLY the content between \\begin{document} and \\end{document}
@@ -61,7 +80,6 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // --- UCB1 STRATEGY SELECTION ---
-    // Use service role to read/update strategy stats
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -71,7 +89,6 @@ serve(async (req) => {
     let strategyInstruction = "";
 
     try {
-      // Fetch all active strategies
       const { data: strategies } = await supabase
         .from("prompt_strategies")
         .select("*")
@@ -80,13 +97,11 @@ serve(async (req) => {
       if (strategies && strategies.length > 0) {
         const totalSelections = strategies.reduce((sum: number, s: any) => sum + s.times_selected, 0);
 
-        // UCB1: select arm with highest upper confidence bound
-        // UCB(i) = X̄ᵢ + √2 × √(ln(N) / nᵢ)
         let bestUCB = -Infinity;
         for (const strategy of strategies) {
           let ucb: number;
           if (strategy.times_selected === 0) {
-            ucb = Infinity; // explore unvisited arms first
+            ucb = Infinity;
           } else {
             const exploitation = strategy.avg_reward;
             const exploration = Math.SQRT2 * Math.sqrt(Math.log(totalSelections + 1) / strategy.times_selected);
@@ -99,7 +114,6 @@ serve(async (req) => {
         }
 
         if (selectedStrategy) {
-          // Increment selection count
           await supabase.from("prompt_strategies").update({
             times_selected: selectedStrategy.times_selected + 1,
             ucb_score: bestUCB === Infinity ? 999 : bestUCB,
@@ -113,11 +127,10 @@ serve(async (req) => {
       console.error("Strategy selection failed, using default:", e);
     }
 
-    // Build the system prompt with the selected strategy's instruction
     const systemPrompt = `${BASE_SYSTEM_PROMPT}
 
 ## CURRENT OPTIMIZATION STRATEGY
-${strategyInstruction || "Balanced approach: integrate keywords naturally while maintaining strong metrics and readability."}`;
+${strategyInstruction || "Balanced approach: integrate keywords naturally while maintaining strong metrics and readability. Apply STAR method with expertise-appropriate bullet lengths."}`;
 
     const userPrompt = `Here is the candidate's current resume:
 ${resumeText}
@@ -126,15 +139,18 @@ Here is the target job description:
 ${jobDescription}
 
 Keywords already matched: ${matchedKeywords.slice(0, 20).join(', ')}
-Critical missing keywords to integrate: ${missingKeywords.slice(0, 30).join(', ')}
+Critical missing keywords to integrate (MUST ALL APPEAR in output): ${missingKeywords.slice(0, 30).join(', ')}
 
 TASK: Rewrite this resume as a FAANG-level engineering manager would optimize it.
-- Convert every weak bullet into an impact-driven statement with metrics
+- Apply the STAR method to EVERY bullet point — each must have: action verb + technical detail + quantified result
+- Adjust bullet length based on experience level (shorter for juniors, detailed for seniors)
+- Convert every weak bullet into an impact-driven statement with specific metrics
 - Make the candidate sound like a production engineer, not a student
-- Integrate ALL critical missing keywords naturally
-- Target 90%+ ATS score
-- Use strong action verbs + technical depth + measurable outcomes
-- Remove ALL fluff, generic phrases, and weak language.`;
+- Integrate ALL ${missingKeywords.length} critical missing keywords — verify each one appears at least once
+- Use EXACT keyword phrasing from the job description (not synonyms)
+- Target 95%+ ATS score
+- Remove ALL fluff, generic phrases, and weak language
+- If the candidate has projects but limited experience, make the Projects section prominent with detailed STAR bullets`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
