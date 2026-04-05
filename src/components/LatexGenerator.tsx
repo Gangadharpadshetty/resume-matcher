@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Download, Code2, Loader2, Wand2, Copy, Check, FileDown } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RewardFeedback } from '@/components/RewardFeedback';
 import type { ATSResult } from '@/lib/atsParser';
+import { invokePublicFunction } from '@/lib/invokePublicFunction';
 
 interface LatexGeneratorProps {
   resumeText: string;
@@ -18,7 +18,19 @@ interface RewardScores {
   totalReward: number;
 }
 
-// Sanitize company name for use in filenames
+interface GenerateResumeResponse {
+  latexCode?: string;
+  strategyId?: string | null;
+  strategyName?: string | null;
+  generationTimeMs?: number;
+  error?: string;
+}
+
+interface RewardModelResponse {
+  scores?: RewardScores;
+  feedbackId?: string;
+}
+
 function sanitizeFileName(name: string): string {
   return name
     .replace(/[^a-zA-Z0-9\s\-_]/g, '')
@@ -41,7 +53,6 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
   const [strategyName, setStrategyName] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Build filename from company name
   const companyName = atsResult.companyName;
   const getFileName = (ext: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -63,16 +74,16 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
     setRewardScores(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-resume', {
+      const data = await invokePublicFunction<GenerateResumeResponse>('generate-resume', {
         body: {
           resumeText,
           jobDescription,
           missingKeywords: atsResult.missingKeywords.slice(0, 30),
           matchedKeywords: atsResult.matchedKeywords.slice(0, 20),
         },
-      });
+        retries: 1,
+      }) as GenerateResumeResponse;
 
-      if (error) throw error;
       if (data?.error) {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
         return;
@@ -87,9 +98,8 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
         description: `Strategy: ${(data.strategyName || 'default').replace(/_/g, ' ')} • ${data.generationTimeMs || 0}ms`,
       });
 
-      // Compute reward scores via the reward model
       try {
-        const { data: rewardData } = await supabase.functions.invoke('reward-model', {
+        const rewardData = await invokePublicFunction<RewardModelResponse>('reward-model', {
           body: {
             action: 'compute_reward',
             latexCode: generatedCode,
@@ -99,13 +109,14 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
             sessionId: crypto.randomUUID(),
             strategyId: data.strategyId,
           },
-        });
+          retries: 1,
+        }) as RewardModelResponse;
+
         if (rewardData?.scores) {
           setRewardScores(rewardData.scores);
-          setFeedbackId(rewardData.feedbackId);
+          setFeedbackId(rewardData.feedbackId || null);
         }
       } catch {
-        // Non-critical: reward computation failed
       }
     } catch (err: any) {
       toast({
@@ -134,21 +145,11 @@ export const LatexGenerator: React.FC<LatexGeneratorProps> = ({
   const downloadPDF = async () => {
     setIsCompiling(true);
     try {
-      const { data, error } = await supabase.functions.invoke('compile-latex', {
+      const blob = await invokePublicFunction('compile-latex', {
         body: { latexCode },
-      });
-
-      if (error) throw error;
-
-      let blob: Blob;
-      if (data instanceof Blob) {
-        blob = data;
-      } else if (data instanceof ArrayBuffer) {
-        blob = new Blob([data], { type: 'application/pdf' });
-      } else {
-        if (data?.error) throw new Error(data.error);
-        throw new Error('Unexpected response format from compiler');
-      }
+        responseType: 'blob',
+        retries: 1,
+      }) as Blob;
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
